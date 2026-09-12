@@ -2,6 +2,7 @@
 { config, pkgs, ... }:
 let
   compiler = import ./compiler.nix { inherit pkgs; };
+  ptyFixtures = pkgs.callPackage ./pty-fixtures.nix { };
   networkFixtures = pkgs.buildPackages.callPackage ./fixtures.nix { };
   archives =
     pkgs.buildPackages.runCommand "nix-openbsd-test-archives"
@@ -44,6 +45,8 @@ in
         export NIX_OPENBSD_TEST_LIBC=${pkgs.lib.getLib pkgs.stdenv.cc.libc}
         export NIX_OPENBSD_TEST_COREUTILS=${pkgs.coreutils}/bin
         export NIX_OPENBSD_TEST_NATIVE=${./native-build.nix}
+        export NIX_OPENBSD_TEST_PTY_FIXTURES=${ptyFixtures}
+        export NIX_OPENBSD_TEST_PTY=${../../scripts/smoke-test-nix-openbsd-pty.sh}
       ''
       + builtins.readFile ../../scripts/smoke-test-nix-openbsd.sh
     ))

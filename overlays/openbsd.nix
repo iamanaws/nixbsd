@@ -289,7 +289,7 @@ in
         _nixFinal: nixPrev: {
           nix-store = (nixPrev.nix-store.override { withAWS = false; }).overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [
-              ./nix-openbsd-builder-pipe.patch
+              ./nix-openbsd-builder-pty.patch
               ./nix-openbsd-build-users.patch
             ];
           });

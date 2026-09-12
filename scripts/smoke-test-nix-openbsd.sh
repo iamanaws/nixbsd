@@ -49,6 +49,8 @@ test "$("$native_output/bin/openbsd-native-c")" = openbsd-native-c-ok
 nix-store --verify-path "$native_output"
 echo 'Native C compilation, linking and execution passed'
 
+"$test_shell" "$NIX_OPENBSD_TEST_PTY"
+
 if nix-build "$test_dir/build.nix" --no-out-link --option substitute false \
   --argstr shell "$test_shell" --argstr nonce "$(basename "$test_dir")-failure" \
   --arg fail true > "$test_dir/failure.log" 2>&1; then

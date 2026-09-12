@@ -7,7 +7,6 @@
 {
   nixpkgs.hostPlatform = "x86_64-openbsd";
   nixpkgs.overlays = [
-    (import ../../overlays/nix-patches.nix)
     (import ../../overlays/openbsd.nix)
   ];
   nixpkgs.overrideNix = false;
