@@ -14,6 +14,8 @@ let
     shellVariables.daemon_flags = tail cfg.startCommand;
     shellVariables.rc_bg = cfg.startType == "foreground";
     shellVariables.daemon_execdir = cfg.directory;
+    shellVariables.daemon_user = cfg.user;
+    shellVariables.rc_stop_signal = cfg.stopSignal;
     hooks.stop_cmd = if cfg.startType == "oneshot" then ":" else null;
     hooks = {
       rc_pre = cfg.preStart;

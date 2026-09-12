@@ -72,6 +72,7 @@ let
         if part.tooLargeIntermediate or false then
           "$TMP/latebuild/${builtins.toString i}"
         else if part ? filename then
+          # Nested disk images contain a named file; ordinary partitions are files themselves.
           "${part}/${part.filename}"
         else
           part;

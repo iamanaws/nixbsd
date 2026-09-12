@@ -17,8 +17,10 @@ if hostPlatform.isFreeBSD then
   ]
 else if hostPlatform.isOpenBSD then
   [
+    ./programs/passwd-openbsd.nix
     ./programs/shutdown-openbsd.nix
     ./programs/su-openbsd.nix
+    ./security/bsd-auth-openbsd.nix
     ./services/ttys/getty-openbsd.nix
     ./system/boot/loader/stand-openbsd
     ./system/boot/init/portable/openbsd.nix

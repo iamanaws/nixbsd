@@ -59,6 +59,7 @@
   };
 
   services.fcron.enable = false;
+  services.openssh.enable = true;
 
   fonts.fontconfig.enable = false;
   xdg.mime.enable = false;

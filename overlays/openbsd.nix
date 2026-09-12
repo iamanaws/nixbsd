@@ -406,6 +406,38 @@ in
 
       stat = openbsdFinal.mkDerivation { path = "usr.bin/stat"; };
 
+      # TODO(nixpkgs): upstream getcap, used by rc.subr to select login classes.
+      getcap = openbsdFinal.mkDerivation { path = "usr.bin/getcap"; };
+
+      su = openbsdPrev.su.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          # Check wheel membership by name: NixBSD reserves gid 0 for root.
+          substituteInPlace "$BSDSRCDIR/usr.bin/su/su.c" \
+            --replace-fail 'getgrgid(0)' 'getgrnam("wheel")'
+          # The auth helper symlinks into /run/wrappers, outside the unveiled directory.
+          substituteInPlace "$BSDSRCDIR/usr.bin/su/su.c" \
+            --replace-fail \
+              'auth_verify(as, style, NULL, lc->lc_class, (char *)NULL);' \
+              'if (unveil(_PATH_AUTHPROGDIR "/login_passwd", "x") == -1)
+                   err(1, "unveil login_passwd");
+               auth_verify(as, style, NULL, lc->lc_class, (char *)NULL);'
+        '';
+      });
+
+      # TODO(nixpkgs): upstream the native password-changing utility.
+      passwd = openbsdFinal.mkDerivation {
+        path = "usr.bin/passwd";
+        extraPaths = [ "usr.bin/chpass" ];
+        buildInputs = [
+          openbsdFinal.librpcsvc
+          openbsdFinal.libutil
+        ];
+        postPatch = ''
+          sed -i -e '/^BINMODE=/d' -e '/^DPADD/d' $BSDSRCDIR/usr.bin/passwd/Makefile
+        '';
+        meta.mainProgram = "passwd";
+      };
+
       # Remove once the pin includes https://github.com/NixOS/nixpkgs/pull/552510.
       stand = openbsdPrev.stand.overrideAttrs (old: {
         patches = [
@@ -461,7 +493,9 @@ in
           substituteInPlace "$BSDSRCDIR/etc/rc.d/rc.subr" \
             --replace-fail \
               'local _rcexec="su -fl -c ''${daemon_class} -s /bin/sh ''${daemon_user} -c"' \
-              'local _rcexec="${final.runtimeShell} -c"' \
+              'local _rcexec="${openbsdFinal.su}/bin/su -fl -c ''${daemon_class} -s ${final.runtimeShell} ''${daemon_user} -c"' \
+            --replace-fail '"''${_set_monitor}; \' \
+              '"''${_set_monitor}; ''${nixbsd_environment:-:}; \' \
             --replace-fail '"$(id -R)"' '"$(${openbsdFinal.id}/bin/id -R)"' \
             --replace-fail '"$(id -u)"' '"$(${openbsdFinal.id}/bin/id -u)"'
         '';

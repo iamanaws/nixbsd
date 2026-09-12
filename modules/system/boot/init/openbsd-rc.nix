@@ -199,6 +199,7 @@ let
     let
       # include su unwrapped here since su is necessary to run rc which sets up the wrapped su
       defaultPath = [
+        pkgs.openbsd.getcap
         pkgs.openbsd.id
         pkgs.coreutils
         pkgs.gnugrep
@@ -209,6 +210,15 @@ let
       ];
       fullPath = opts.path ++ defaultPath;
       pathStr = "${makeBinPath fullPath}:${makeSearchPathOutput "bin" "sbin" fullPath}";
+      # su -l clears the environment. Restore only the declared service values
+      # and its package PATH after switching identity and applying login limits.
+      serviceEnvironment =
+        "export "
+        + escapeShellArgs (
+          mapAttrsToList (name: value: "${name}=${toString value}") (
+            (notNull opts.environment) // { PATH = pathStr; }
+          )
+        );
     in
     pkgs.writeTextFile {
       inherit (opts) name;
@@ -221,6 +231,7 @@ let
       ''
       + ''
         export PATH=${escapeShellArg pathStr}
+        nixbsd_environment=${escapeShellArg serviceEnvironment}
         daemon=${escapeShellArg opts.daemon}
 
         . /etc/rc.d/rc.subr
