@@ -16,7 +16,7 @@ in
 {
   options.services.devd = {
     enable = mkEnableOption "devd service" // {
-      default = true;
+      default = pkgs.stdenv.hostPlatform.isFreeBSD;
     };
   };
 

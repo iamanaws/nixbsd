@@ -1,4 +1,8 @@
-{ pkgs, stand-efi }:
+{
+  pkgs,
+  stand-efi,
+  console,
+}:
 
 pkgs.replaceVarsWith {
   src = ./stand-conf-builder.sh;
@@ -12,5 +16,6 @@ pkgs.replaceVarsWith {
     ];
     inherit (pkgs) bash;
     stand = stand-efi;
+    inherit console;
   };
 }

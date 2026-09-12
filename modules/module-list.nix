@@ -55,8 +55,6 @@ in
   ./misc/man-db.nix
   ./misc/nix-overlay.nix
   ./misc/substituter.nix
-  ./programs/passwd.nix
-  ./programs/su.nix
   ./programs/ssh.nix
   ./programs/tmux.nix # both
   "${extPath}/programs/tmux.nix" # both
@@ -94,6 +92,7 @@ in
   ./tasks/network-interfaces.nix
   ./tasks/tempfiles
   ./virtualisation/build-vm.nix
+  ./virtualisation/is-jail.nix
   ./tasks/nix-store.nix
 
   ./services/x11/xserver.nix

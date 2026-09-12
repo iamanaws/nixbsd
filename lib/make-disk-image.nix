@@ -69,7 +69,12 @@ let
     part
     // {
       filepath =
-        if part.tooLargeIntermediate or false then "$TMP/latebuild/${builtins.toString i}" else part;
+        if part.tooLargeIntermediate or false then
+          "$TMP/latebuild/${builtins.toString i}"
+        else if part ? filename then
+          "${part}/${part.filename}"
+        else
+          part;
     };
   partitionsFixed = lib.imap1 fixPartition partitions;
 

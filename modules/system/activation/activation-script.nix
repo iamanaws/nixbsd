@@ -10,6 +10,7 @@ with lib;
 
 let
   fsckY = if config.system.boot.autoFsck then "-y" else "";
+  fsckClean = lib.optionalString pkgs.stdenv.hostPlatform.isFreeBSD "-C";
   tosyslog = (
     pkgs.runCommandCC "tosyslog" { } ''
       mkdir -p $out/bin
@@ -110,7 +111,7 @@ let
 
           mkdir -m 0755 -p "$DST"
           if [[ -z "$NOFSCK" ]]; then
-            fsck -C ${fsckY} "$SRC"
+            fsck ${fsckClean} ${fsckY} "$SRC"
           fi
           mount -o "$OPT" -t "$TYP" "$SRC" "$DST"
         }
@@ -118,7 +119,7 @@ let
       ''
       + lib.optionalString pkgs.stdenv.hostPlatform.isOpenBSD ''
         # TODO: Support other root paths
-        fsck -C ${fsckY} /dev/sd0a
+        fsck ${fsckY} /dev/sd0a
         mount -u -w /dev/sd0a /
       ''
       + lib.optionalString pkgs.stdenv.hostPlatform.isFreeBSD ''

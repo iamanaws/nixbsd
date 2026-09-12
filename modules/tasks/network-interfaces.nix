@@ -765,7 +765,7 @@ in
         // listToAttrs (map configureAddrs interfaces)
       );
 
-    boot.kernel.sysctl = {
+    boot.kernel.sysctl = mkIf pkgs.stdenv.hostPlatform.isFreeBSD {
       "net.inet6.ip6.use_tempaddr" = tempaddrValues.${cfg.tempAddresses}.use_tempaddr;
       "net.inet6.ip6.prefer_tempaddr" = tempaddrValues.${cfg.tempAddresses}.prefer_tempaddr;
     };

@@ -110,5 +110,15 @@ in
       permissions = "u+rx,g+rx,o+rx";
       source = "${pkgs.openbsd.login_passwd}/bin/login_passwd";
     };
+
+    # BSD authentication looks up helpers at this fixed path. The target is
+    # populated by the suid-sgid-wrappers service before getty starts.
+    system.activationScripts.login-passwd-auth-program = {
+      deps = [ "usrbinenv" ];
+      text = ''
+        mkdir -p /usr/libexec/auth
+        ln -sfn ${config.security.wrapperDir}/login_passwd /usr/libexec/auth/login_passwd
+      '';
+    };
   };
 }

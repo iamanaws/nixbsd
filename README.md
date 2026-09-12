@@ -45,6 +45,16 @@ All outputs from `system.build` are available, plus a few more. When developing 
 
 The `closureInfo` and `vmClosureInfo` outputs include metadata about the [build closure](https://zero-to-nix.com/concepts/closures), including a list of all packages. Keeping a copy of this around will prevent nix from garbage-collecting all of your builds.
 
+### OpenBSD
+
+From an x86_64 Linux host, build and run the minimal OpenBSD VM:
+
+```shell
+nix build .#openbsd-base.vm
+result/bin/run-nixbsd-openbsd-base-vm
+# Log in on the serial console as root:toor
+```
+
 ### Subtituter
 There is a substituter (binary cache) in the flake.
 If Artemis remembers, this should contain everything in `.#base.vmClosureInfo` and

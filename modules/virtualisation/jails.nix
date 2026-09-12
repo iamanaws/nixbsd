@@ -93,15 +93,6 @@ let
 in
 {
   options = {
-    boot.isJail = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Whether this NixBSD machine is a jail running
-        in another NixBSD system.
-      '';
-    };
-
     boot.enableJails = mkOption {
       type = types.bool;
       default = true;
