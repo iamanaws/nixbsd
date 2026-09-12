@@ -115,10 +115,13 @@ in
 
       # Legacy configuration conversion.
       nix.settings.sandbox-fallback = false;
+      # OpenBSD has no Nix build sandbox implementation.
+      nix.settings.sandbox = mkIf pkgs.stdenv.hostPlatform.isOpenBSD (mkDefault false);
       nix.settings.sandbox-paths = [ "/bin/sh=${lib.getExe pkgs.pkgsStatic.bash}" ];
 
     }
     (mkIf (!config.boot.isJail) {
+      nix.settings.build-users-group = mkIf pkgs.stdenv.hostPlatform.isOpenBSD (mkDefault "nixbld");
       init.services.nix-daemon = {
         description = "nix daemon for a multi-user store";
         dependencies = [

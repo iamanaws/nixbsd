@@ -1,5 +1,22 @@
 final: prev:
 let
+  # Add unversioned .so names so linker and configure probes find OpenBSD libraries.
+  withLinkerName =
+    package: name:
+    if prev.stdenv.hostPlatform.isOpenBSD then
+      package.overrideAttrs (old: {
+        postInstall =
+          (old.postInstall or "")
+          + "\n"
+          + ''
+            libraries=("$out/lib/${name}.so."*)
+            (( ''${#libraries[@]} == 1 ))
+            ln -sfn "''${libraries[0]##*/}" "$out/lib/${name}.so"
+          '';
+      })
+    else
+      package;
+
   # Remove once the pin includes https://github.com/NixOS/nixpkgs/pull/552510.
   staticPie =
     stdenv:
@@ -78,6 +95,10 @@ in
       prev.freebsd;
 
   # TODO(nixpkgs): validate and upstream the remaining cross-build fixes.
+  bzip2 = withLinkerName prev.bzip2 "libbz2";
+  expat = withLinkerName prev.expat "libexpat";
+  xz = withLinkerName prev.xz "liblzma";
+
   cmocka =
     if prev.stdenv.hostPlatform.isOpenBSD then
       prev.cmocka.overrideAttrs (old: {
@@ -89,12 +110,12 @@ in
 
   curl =
     if prev.stdenv.hostPlatform.isOpenBSD then
-      prev.curl.override {
+      withLinkerName (prev.curl.override {
         gssSupport = false;
         http3Support = false;
         idnSupport = false;
         pslSupport = false;
-      }
+      }) "libcurl"
     else
       prev.curl;
 
@@ -192,12 +213,14 @@ in
   libarchive =
     if prev.stdenv.hostPlatform.isOpenBSD then
       prev.libarchive.overrideAttrs (old: {
-        buildInputs = (old.buildInputs or [ ]) ++ [ final.libiconv ];
+        buildInputs = (old.buildInputs or [ ]) ++ [
+          final.libiconv
+          final.expat
+        ];
         preConfigure = (old.preConfigure or "") + ''
-          export LIBS="-Wl,-liconv -Wl,--allow-shlib-undefined"
+          export LIBS="-Wl,-liconv -Wl,-lbz2 -Wl,-lexpat -Wl,-llzma -Wl,-lc"
         '';
         configureFlags = (old.configureFlags or [ ]) ++ [
-          "--without-lzma"
           "--without-xml2"
         ];
       })
@@ -264,7 +287,15 @@ in
     if prev.stdenv.hostPlatform.isOpenBSD then
       (prev.nix.overrideScope (
         _nixFinal: nixPrev: {
-          nix-store = nixPrev.nix-store.override { withAWS = false; };
+          nix-store = (nixPrev.nix-store.override { withAWS = false; }).overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [
+              ./nix-openbsd-builder-pipe.patch
+              ./nix-openbsd-build-users.patch
+            ];
+          });
+          nix-main = nixPrev.nix-main.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./nix-openbsd-atfork.patch ];
+          });
           nix-util = nixPrev.nix-util.overrideAttrs (old: {
             postPatch = (old.postPatch or "") + ''
               substituteInPlace terminal.cc \
@@ -417,10 +448,7 @@ in
         # Remove once the pin includes https://github.com/NixOS/nixpkgs/pull/552510.
         patches = map (
           patch:
-          if builtins.baseNameOf patch == "boot-phases.patch" then
-            ./openbsd-boot-phases.patch
-          else
-            patch
+          if builtins.baseNameOf patch == "boot-phases.patch" then ./openbsd-boot-phases.patch else patch
         ) old.patches;
         # NixBSD runtime integration.
         postPatch = (old.postPatch or "") + ''

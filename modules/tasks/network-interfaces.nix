@@ -597,6 +597,24 @@ in
       ];
     };
 
+    init.services.network_loopback = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      description = "Configure the loopback interface";
+      dependencies = [ "FILESYSTEMS" ];
+      before = [ "NETWORKING" ];
+      startType = "oneshot";
+      startCommand = [
+        (pkgs.writeShellScript "network-loopback" ''
+          ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 up
+          ${concatMapStringsSep "\n" (address: ''
+            ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 inet ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
+          '') cfg.interfaces.lo0.ipv4.addresses}
+          ${concatMapStringsSep "\n" (address: ''
+            ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 inet6 ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
+          '') cfg.interfaces.lo0.ipv6.addresses}
+        '')
+      ];
+    };
+
     # Hostname/hostid stuff
     environment.etc.hostid = mkIf (cfg.hostId != null) { source = hostidFile; };
     environment.etc.hostname = mkIf (cfg.hostName != "") { text = cfg.hostName + "\n"; };

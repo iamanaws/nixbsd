@@ -1,0 +1,15 @@
+Enable the existing Unix build-user locking and credential switching on
+OpenBSD. Without this, useBuildUsers silently returns false even when
+build-users-group is configured, and a root daemon builds as root.
+
+--- a/unix/user-lock.cc
++++ b/unix/user-lock.cc
+@@ -239,7 +239,7 @@
+ #ifdef __linux__
+     static bool b = (localSettings.buildUsersGroup != "" || localSettings.autoAllocateUids) && isRootUser();
+     return b;
+-#elif defined(__APPLE__) || defined(__FreeBSD__)
++#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+     static bool b = localSettings.buildUsersGroup != "" && isRootUser();
+     return b;
+ #else

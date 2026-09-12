@@ -162,6 +162,13 @@ let
       # Likewise, the first system will be the booted-system
       [ -e /run/booted-system ] || ln -sfn "$(readlink -f "$systemConfig")" /run/booted-system
 
+      ${optionalString (config.nix.enable && pkgs.stdenv.hostPlatform.isOpenBSD) ''
+        # Keep both generations alive even when runtime root discovery is unavailable.
+        mkdir -p /nix/var/nix/gcroots
+        ln -sfn /run/current-system /nix/var/nix/gcroots/current-system
+        ln -sfn /run/booted-system /nix/var/nix/gcroots/booted-system
+      ''}
+
       if [[ $_status != 0 ]]; then
         echo "NixBSD system activation FAILED. Dropping into rescue shell."
         bash -i
