@@ -597,20 +597,55 @@ in
       ];
     };
 
-    init.services.network_loopback = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
-      description = "Configure the loopback interface";
+    networking.dhcpcd.denyInterfaces = mkIf pkgs.stdenv.hostPlatform.isOpenBSD (
+      map (i: i.name) (
+        filter (i: i.useDHCP == false || (i.useDHCP == null && i.ipv4.addresses != [ ])) interfaces
+      )
+    );
+
+    init.services.network_interfaces = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      description = "Configure static addresses and the default gateway";
       dependencies = [ "FILESYSTEMS" ];
       before = [ "NETWORKING" ];
       startType = "oneshot";
       startCommand = [
-        (pkgs.writeShellScript "network-loopback" ''
-          ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 up
-          ${concatMapStringsSep "\n" (address: ''
-            ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 inet ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
-          '') cfg.interfaces.lo0.ipv4.addresses}
-          ${concatMapStringsSep "\n" (address: ''
-            ${pkgs.openbsd.ifconfig}/bin/ifconfig lo0 inet6 ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
-          '') cfg.interfaces.lo0.ipv6.addresses}
+        (pkgs.writeShellScript "network-interfaces" ''
+          set -e
+          ${concatMapStringsSep "\n" (i: ''
+            ${pkgs.openbsd.ifconfig}/bin/ifconfig ${escapeShellArg i.name} up
+            ${concatMapStringsSep "\n" (address: ''
+              ${pkgs.openbsd.ifconfig}/bin/ifconfig ${escapeShellArg i.name} inet ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
+            '') i.ipv4.addresses}
+            ${concatMapStringsSep "\n" (address: ''
+              ${pkgs.openbsd.ifconfig}/bin/ifconfig ${escapeShellArg i.name} inet6 ${escapeShellArg "${address.address}/${toString address.prefixLength}"} alias
+            '') i.ipv6.addresses}
+          '') (filter (i: i.name == "lo0" || i.ipv4.addresses != [ ] || i.ipv6.addresses != [ ]) interfaces)}
+
+          ${optionalString (cfg.defaultGateway != null && cfg.defaultGateway.address != "") (
+            let
+              gateway = cfg.defaultGateway;
+              args = escapeShellArgs (
+                [
+                  "-inet"
+                  "default"
+                  gateway.address
+                ]
+                ++ optionals (gateway.interface != null) [
+                  "-ifp"
+                  gateway.interface
+                ]
+                # OpenBSD expresses route preference as priority, not FreeBSD's weight.
+                ++ optionals (gateway.metric != null) [
+                  "-priority"
+                  (toString gateway.metric)
+                ]
+              );
+            in
+            ''
+              ${pkgs.openbsd.route}/bin/route -n add ${args} ||
+                ${pkgs.openbsd.route}/bin/route -n change ${args}
+            ''
+          )}
         '')
       ];
     };
@@ -618,6 +653,9 @@ in
     # Hostname/hostid stuff
     environment.etc.hostid = mkIf (cfg.hostId != null) { source = hostidFile; };
     environment.etc.hostname = mkIf (cfg.hostName != "") { text = cfg.hostName + "\n"; };
+    environment.etc.myname = mkIf (pkgs.stdenv.hostPlatform.isOpenBSD && cfg.hostName != "") {
+      text = cfg.fqdnOrHostName + "\n";
+    };
 
     init.services.hostname = mkIf pkgs.stdenv.hostPlatform.isFreeBSD {
       before = [ "NETWORKING" ];

@@ -574,6 +574,7 @@ in
             openbsd.cmp
             openbsd.dev_mkdb
             openbsd.dmesg
+            openbsd.hostname
             openbsd.ifconfig
             openbsd.kvm_mkdb
             openbsd.pfctl

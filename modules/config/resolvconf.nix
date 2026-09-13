@@ -92,6 +92,11 @@ in
   };
 
   config = mkMerge [
+    (mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      # libc uses these databases to resolve protocol and service names.
+      environment.etc.protocols.source = "${pkgs.iana-etc}/etc/protocols";
+      environment.etc.services.source = "${pkgs.iana-etc}/etc/services";
+    })
     {
       environment.etc."resolvconf.conf".text =
         if !cfg.enable then
