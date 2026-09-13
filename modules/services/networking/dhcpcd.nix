@@ -103,7 +103,12 @@ let
         # anything ever again ("couldn't resolve ..., giving up on
         # it"), so we silently lose time synchronisation. This also
         # applies to openntpd.
-        test -x /etc/rc.d/ntpd && /etc/rc.d/ntpd restart
+        ${
+          # OpenBSD's ntpd retries DNS itself; restarting here can race boot.
+          optionalString (
+            !pkgs.stdenv.hostPlatform.isOpenBSD
+          ) "test -x /etc/rc.d/ntpd && /etc/rc.d/ntpd restart"
+        }
         test -x /etc/rc.d/chronyd && /etc/rc.d/chronyd restart
     fi
 

@@ -233,12 +233,16 @@ let
         export PATH=${escapeShellArg pathStr}
         nixbsd_environment=${escapeShellArg serviceEnvironment}
         daemon=${escapeShellArg opts.daemon}
+        # rc.subr computes its process match from the daemon and its flags.
+        daemon_flags=${formatScriptLiteral opts.shellVariables.daemon_flags}
 
         . /etc/rc.d/rc.subr
       ''
       + "\n"
       + lib.concatStringsSep "\n" (
-        mapAttrsToList (name: value: "${name}=${formatScriptLiteral value}") (notNull opts.shellVariables)
+        mapAttrsToList (name: value: "${name}=${formatScriptLiteral value}") (
+          notNull (removeAttrs opts.shellVariables [ "daemon_flags" ])
+        )
       )
       + "\n"
       + lib.concatStringsSep "\n" (

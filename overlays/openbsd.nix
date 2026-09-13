@@ -227,17 +227,6 @@ in
     else
       prev.libarchive;
 
-  libpng =
-    if prev.stdenv.hostPlatform.isOpenBSD then
-      prev.libpng.overrideAttrs (old: {
-        env = (old.env or { }) // {
-          NIX_CFLAGS_COMPILE_x86_64_unknown_openbsd =
-            (old.env.NIX_CFLAGS_COMPILE_x86_64_unknown_openbsd or "") + " -D_BSD_SOURCE";
-        };
-      })
-    else
-      prev.libpng;
-
   libxml2 =
     if prev.stdenv.hostPlatform.isOpenBSD then
       prev.libxml2.overrideAttrs (old: {
