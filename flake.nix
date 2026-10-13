@@ -1,10 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable-small/nixexprs.tar.xz";
-    mini-tmpfiles = {
-      url = "github:nixos-bsd/mini-tmpfiles";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
@@ -12,7 +8,6 @@
     {
       self,
       nixpkgs,
-      mini-tmpfiles,
       ...
     }:
     let
@@ -66,10 +61,6 @@
           // {
             inherit (nixpkgs) lib;
             nixpkgsPath = nixpkgs.outPath;
-            specialArgs = {
-              mini-tmpfiles-flake = mini-tmpfiles;
-            }
-            // (args.specialArgs or { });
           }
           // lib.optionalAttrs (!args ? system) { system = null; }
         );

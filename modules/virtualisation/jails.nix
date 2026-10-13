@@ -133,9 +133,6 @@ in
                     loc: defs:
                     (import ../../lib/eval-config.nix {
                       inherit lib;
-                      extraArgs = {
-                        inherit (host) mini-tmpfiles-flake;
-                      };
                       nixpkgsPath = config.nixpkgs;
                       modules =
                         let
