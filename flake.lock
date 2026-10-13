@@ -14,26 +14,6 @@
         "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
       }
     },
-    "mini-tmpfiles": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1742754557,
-        "narHash": "sha256-nGxgiNhA94eSl8jcQwCboJ5Ed132z8yrFdOoT+rf8bE=",
-        "owner": "nixos-bsd",
-        "repo": "mini-tmpfiles",
-        "rev": "534ee577692c7092fdcd035f89bc29b663c6f9ca",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos-bsd",
-        "repo": "mini-tmpfiles",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784834273,
@@ -50,7 +30,6 @@
     "root": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "mini-tmpfiles": "mini-tmpfiles",
         "nixpkgs": "nixpkgs"
       }
     }
