@@ -22,8 +22,8 @@ evalConfigArgs@
   modulesLocation ? (builtins.unsafeGetAttrPos "modules" evalConfigArgs).file or null, # !!! See comment about check in lib/modules.nix
   check ? true,
   prefix ? [ ],
-  lib ? import <nixpkgs/lib>, # Not imported, we want the actual path to be passed in
-  nixpkgsPath ? <nixpkgs>,
+  lib ? import "${nixpkgsPath}/lib",
+  nixpkgsPath ? <nixpkgs>, # Not imported, we want the actual path to be passed in
   extraModules ?
     let
       e = builtins.getEnv "NIXBSD_EXTRA_MODULE_PATH";
