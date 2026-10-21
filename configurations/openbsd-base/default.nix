@@ -7,13 +7,28 @@
 {
   nixpkgs.hostPlatform = "x86_64-openbsd";
   nixpkgs.overlays = [
-    (import ../../overlays/nix-patches.nix)
+    (import ../../overlays/openbsd.nix)
   ];
+  # Keep the OpenBSD-patched Nix package selected by the overlay.
+  nixpkgs.overrideNix = false;
   boot.kernel.package = pkgs.openbsd.sys;
 
   boot.loader.stand-openbsd.enable = true;
+  boot.loader.stand-openbsd.console = "com0";
+  system.stateVersion = lib.mkDefault "26.11";
 
-  # users.users.root.initialPassword = "toor";
+  fileSystems."/" = {
+    device = "/dev/sd0a";
+    fsType = "ffs";
+    # Activation checks root before mounting it writable.
+    noCheck = true;
+  };
+
+  users.mutableUsers = false;
+  users.defaultUserShell = pkgs.bash;
+  users.groups.kmem.gid = 2;
+  users.groups.utmp.gid = 45;
+
   users.users.root.initialHashedPassword = "$2b$09$CexHNp84.dJLZv5oBcSBuO7zLdbAIBxyxiukAPwY3yKiH162s.GGW";
 
   users.users.bestie = {
@@ -26,12 +41,22 @@
   environment.systemPackages = [
     pkgs.openbsd.kdump
     pkgs.openbsd.ktrace
-    pkgs.neofetch
   ];
+  environment.etc.myname.text = config.networking.fqdnOrHostName + "\n";
 
-  virtualisation.vmVariant.virtualisation.diskImage = "./${config.system.name}.qcow2";
+  environment.etc.ttys.text = lib.mkForce ''
+    # name  getty                                      type   status
+    console "${pkgs.openbsd.getty}/bin/getty std.9600" vt220  off secure
+    tty00   "${pkgs.openbsd.getty}/bin/getty std.9600" vt220  on secure
+  '';
 
-  services.sshd.enable = true;
+  virtualisation.vmVariant.virtualisation = {
+    diskImage = "./${config.system.name}.qcow2";
+    graphics = false;
+  };
+
+  services.openssh.enable = true;
+  openbsd.rc.conf.pf = false;
 
   xdg.mime.enable = false;
   documentation.enable = false;
