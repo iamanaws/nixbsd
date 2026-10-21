@@ -54,6 +54,7 @@ addEntry() {
 # label: $label
 # toplevel: $toplevel
 # real init: $init
+set tty @console@
 set image $kernel
 set init $toplevel/bin/activate-init-native
 EOF

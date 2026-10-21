@@ -297,14 +297,20 @@ tem partition but the drive layout is asking for it!"
     nixStoreClosure = config.virtualisation.additionalPaths;
   };
 
-  openbsdDataPartition = pkgs.callPackage ../../lib/make-disk-image.nix {
-    inherit pkgs lib;
-    partitions = [
-      openbsdRootPartition
-    ];
-    format = "raw";
-    partitionTableType = "bsd";
-  };
+  openbsdDataPartition =
+    let
+      image = pkgs.callPackage ../../lib/make-disk-image.nix {
+        inherit pkgs lib;
+        partitions = [ openbsdRootPartition ];
+        format = "raw";
+        partitionTableType = "bsd";
+      };
+    in
+    image
+    // {
+      # The outer image needs the nested image file, rather than its output directory.
+      outPath = "${image}/${image.filename}";
+    };
 
   dataPartition =
     {
@@ -1030,6 +1036,8 @@ in
                 {
                   device = cfg.rootDevice;
                   fsType = cfg.rootFilesystem;
+                  # OpenBSD activation checks root before mounting it writable.
+                  noCheck = pkgs.stdenv.hostPlatform.isOpenBSD;
                 }
             );
             "/tmp" = lib.mkIf config.boot.tmp.useTmpfs {

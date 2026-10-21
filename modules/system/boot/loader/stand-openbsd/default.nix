@@ -10,10 +10,12 @@ let
   builder = import ./stand-conf-builder.nix {
     inherit pkgs;
     stand-efi = pkgs.openbsd.stand;
+    console = cfg.console;
   };
   populateBuilder = import ./stand-conf-builder.nix {
     pkgs = pkgs.buildPackages;
     stand-efi = pkgs.openbsd.stand;
+    console = cfg.console;
   };
   builderArgs = "-c";
 in
@@ -23,6 +25,14 @@ in
       enable = mkEnableOption (''
         Use the OpenBSD boot loader.
       '');
+      console = mkOption {
+        type = types.enum [
+          "pc0"
+          "com0"
+        ];
+        default = "pc0";
+        description = "Console selected by the OpenBSD boot loader.";
+      };
     };
   };
 
