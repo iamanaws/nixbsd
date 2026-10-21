@@ -199,6 +199,7 @@ let
     let
       # include su unwrapped here since su is necessary to run rc which sets up the wrapped su
       defaultPath = [
+        pkgs.openbsd.getcap
         pkgs.openbsd.id
         pkgs.coreutils
         pkgs.gnugrep
@@ -209,6 +210,15 @@ let
       ];
       fullPath = opts.path ++ defaultPath;
       pathStr = "${makeBinPath fullPath}:${makeSearchPathOutput "bin" "sbin" fullPath}";
+      # su -l clears the environment. Restore only the declared service values
+      # and its package PATH after switching identity and applying login limits.
+      serviceEnvironment =
+        "export "
+        + escapeShellArgs (
+          mapAttrsToList (name: value: "${name}=${toString value}") (
+            (notNull opts.environment) // { PATH = pathStr; }
+          )
+        );
     in
     pkgs.writeTextFile {
       inherit (opts) name;
@@ -221,13 +231,18 @@ let
       ''
       + ''
         export PATH=${escapeShellArg pathStr}
+        nixbsd_environment=${escapeShellArg serviceEnvironment}
         daemon=${escapeShellArg opts.daemon}
+        # rc.subr computes its process match from the daemon and its flags.
+        daemon_flags=${formatScriptLiteral opts.shellVariables.daemon_flags}
 
         . /etc/rc.d/rc.subr
       ''
       + "\n"
       + lib.concatStringsSep "\n" (
-        mapAttrsToList (name: value: "${name}=${formatScriptLiteral value}") (notNull opts.shellVariables)
+        mapAttrsToList (name: value: "${name}=${formatScriptLiteral value}") (
+          notNull (removeAttrs opts.shellVariables [ "daemon_flags" ])
+        )
       )
       + "\n"
       + lib.concatStringsSep "\n" (
@@ -559,9 +574,11 @@ in
             openbsd.cmp
             openbsd.dev_mkdb
             openbsd.dmesg
+            openbsd.hostname
             openbsd.ifconfig
             openbsd.kvm_mkdb
             openbsd.pfctl
+            openbsd.route
             openbsd.sed
             openbsd.swapctl
             openbsd.sysctl
@@ -571,11 +588,14 @@ in
           ];
         in
         ''
-          export PATH="${lib.makeBinPath path}:$PATH"
-          mkdir -p /var/run/dev.db   # make su work
+          # rc uses BSD stat options.
+          export PATH="${lib.makeBinPath ([ pkgs.openbsd.stat ] ++ config.system.fsPackages ++ path)}:$PATH"
+          # dev_mkdb creates dev.db as a file.
+          mkdir -p /var/run
           exec ${pkgs.oksh}/bin/oksh ${cfg.package}/etc/rc "$*"
         '';
       "rc.d/rc.subr".source = "${cfg.package}/etc/rc.d/rc.subr";
+      "netstart".source = "${cfg.package}/etc/netstart";
       "rc.order".source = makeRcOrder cfg.services;
       "rc.conf".text = formatRcConf cfg.conf;
     }

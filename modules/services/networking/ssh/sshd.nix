@@ -712,6 +712,11 @@ in
 
     freebsd.rc.conf.sshd_program = "${cfgc.package}/bin/sshd";
 
+    # Match sshd's listener title rather than its child sessions.
+    openbsd.rc.services = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      sshd.shellVariables.pexp = "sshd: ${cfgc.package}/bin/sshd \\[listener\\].*";
+    };
+
     init.services.sshd = {
       description = "Secure Shell Daemon";
       dependencies = [

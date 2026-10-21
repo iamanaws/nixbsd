@@ -215,6 +215,11 @@ in
   ###### implementation
 
   config = mkIf enableDHCP {
+    # dhcpcd changes its title after starting its manager process.
+    openbsd.rc.services = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      dhcpcd.shellVariables.pexp = "dhcpcd: \\[manager\\].*";
+    };
+
     init.services.dhcpcd = {
       description = "DHCP Client";
       dependencies = [
@@ -222,6 +227,11 @@ in
         "network_defaults"
       ];
       before = [ "NETWORKING" ];
+
+      # OpenBSD uses mtree rather than systemd-tmpfiles during boot.
+      preStart = mkIf pkgs.stdenv.hostPlatform.isOpenBSD ''
+        ${pkgs.coreutils}/bin/install -d -m 0700 -o dhcpcd -g dhcpcd /var/run/dhcpcd
+      '';
 
       path = [
         config.networking.resolvconf.package

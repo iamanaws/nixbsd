@@ -92,6 +92,11 @@ in
   };
 
   config = mkMerge [
+    (mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      # Use OpenBSD's databases, including its protocol aliases (icmp6, carp).
+      environment.etc.protocols.source = "${pkgs.openbsd.rc}/etc/protocols";
+      environment.etc.services.source = "${pkgs.openbsd.rc}/etc/services";
+    })
     {
       environment.etc."resolvconf.conf".text =
         if !cfg.enable then

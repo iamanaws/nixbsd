@@ -393,10 +393,15 @@ in
 
       path = [ pkgs.fcron ];
 
-      preStart = ''
-        # load system crontab file
-        /run/wrappers/bin/fcrontab -u systab - < ${pkgs.writeText "fcrontab" fcrontab}
-      '';
+      preStart =
+        lib.optionalString pkgs.stdenv.hostPlatform.isOpenBSD ''
+          # OpenBSD uses mtree rather than systemd-tmpfiles during boot.
+          ${pkgs.coreutils}/bin/install -d -m 0770 -o fcron -g fcron /var/spool/fcron
+        ''
+        + ''
+          # load system crontab file
+          /run/wrappers/bin/fcrontab -u systab - < ${pkgs.writeText "fcrontab" fcrontab}
+        '';
 
       startType = "forking";
       startCommand = [
