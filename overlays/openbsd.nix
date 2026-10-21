@@ -3,6 +3,7 @@ final: prev:
 prev.lib.composeManyExtensions [
   (import ./openbsd-backports.nix)
   (import ./openbsd-packages.nix)
+  (import ./openbsd-nix.nix)
   (final: prev: {
     freebsd =
       if prev.stdenv.hostPlatform.isLinux then

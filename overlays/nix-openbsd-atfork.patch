@@ -1,0 +1,43 @@
+Work around the OpenBSD 7.9 libc atfork lock surviving in daemon workers.
+The prepare callback records whether libc acquired its atfork lock; the
+child restores that flag before libc conditionally releases the lock.
+See https://www.mail-archive.com/misc@openbsd.org/msg183368.html.
+This uses an internal libc symbol and must be re-audited on OS updates.
+
+--- a/shared.cc
++++ b/shared.cc
+@@ -17,6 +17,11 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <signal.h>
++
++#ifdef __OpenBSD__
++#  include <pthread.h>
++extern "C" int __isthreaded;
++#endif
+ 
+ #ifndef _WIN32
+ #  include <sys/resource.h>
+@@ -162,6 +167,22 @@
+ 
+ void initNix(bool loadConfig)
+ {
++#ifdef __OpenBSD__
++    /* OpenBSD 7.9 clears __isthreaded in the fork child before libc's
++       _ATFORK_UNLOCK(), leaving its atfork mutex locked. A daemon worker
++       that starts threads and forks again then deadlocks. Preserve the
++       parent's flag through the child handlers so libc releases the lock.
++       This intentionally depends on OpenBSD libc's internal fork protocol. */
++    static const int atforkError = [] {
++        static int wasThreaded;
++        return pthread_atfork(
++            [] { wasThreaded = __isthreaded; }, nullptr,
++            [] { __isthreaded = wasThreaded; });
++    }();
++    if (atforkError)
++        throw SysError(atforkError, "registering OpenBSD fork workaround");
++#endif
++
+     /* Turn on buffering for cerr. */
+ #if HAVE_PUBSETBUF
+     static char buf[1024];
