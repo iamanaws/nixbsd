@@ -1,7 +1,6 @@
 # NixBSD
 NixBSD is an attempt to make a reproducible and declarable BSD, based on [NixOS](https://nixos.org/).
-Although theoretically much of this work could be copied to build other BSDs,
-all work thus far has been focused on building a FreeBSD distribution.
+Development focuses on FreeBSD, with an experimental OpenBSD VM configuration.
 
 ## Structure
 NixBSD has three main components
@@ -34,6 +33,17 @@ The easiest way to test module changes is to build a virtual machine from Linux.
 You can build sample configurations (directories in [configurations](configurations))
 easily with the flake output `.#<configName>.<outputName>`.
 The `base` configuration provides a simple starting point with a user account and default services.
+
+The experimental OpenBSD 7.9 VM boots to a serial login:
+
+```shell
+nix run .#openbsd-base.vm
+```
+
+Log in as `root` or `bestie` with password `toor`. Guest Nix and SSH are enabled.
+Run the boot and login check with
+`bash scripts/smoke-test-openbsd-vm.sh`.
+Check guest Nix with `bash scripts/smoke-test-nix-openbsd-vm.sh`.
 
 All outputs from `system.build` are available, plus a few more. When developing you may want:
 
