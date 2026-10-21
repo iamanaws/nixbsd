@@ -315,7 +315,8 @@ let
 
         initialHashedPassword = mkOption {
           type = with types; nullOr (passwdEntry str);
-          default = null;
+          # An empty password field enables passwordless BSD authentication.
+          default = if pkgs.stdenv.hostPlatform.isOpenBSD then "*" else null;
           description = ''
             Specifies the initial hashed password for the user, i.e. the
             hashed password assigned if the user does not already
@@ -732,18 +733,25 @@ in
 
     system.activationScripts.users = {
       supportsDryActivation = true;
-      text = ''
-        install -m 0700 -d /root
-        install -m 0755 -d /home
+      text =
+        optionalString pkgs.stdenv.hostPlatform.isOpenBSD ''
+          # pwd_mkdb checks root's shell before the rest of /etc is activated.
+          if [ "''${NIXOS_ACTION:-}" != dry-activate ]; then
+            ln -sfn ${config.environment.etc."shells".source} /etc/shells
+          fi
+        ''
+        + ''
+          install -m 0700 -d /root
+          install -m 0755 -d /home
 
-        ${
-          pkgs.perl.withPackages (p: [
-            p.FileSlurp
-            p.JSON
-          ])
-        }/bin/perl \
-        -w ${./update-users-groups.pl} ${spec}
-      '';
+          ${
+            pkgs.perl.withPackages (p: [
+              p.FileSlurp
+              p.JSON
+            ])
+          }/bin/perl \
+          -w ${./update-users-groups.pl} ${spec}
+        '';
     };
 
     # for backwards compatibility

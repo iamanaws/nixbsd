@@ -55,8 +55,6 @@ in
   ./misc/man-db.nix
   ./misc/nix-overlay.nix
   ./misc/substituter.nix
-  ./programs/passwd.nix
-  ./programs/su.nix
   ./programs/ssh.nix
   ./programs/tmux.nix # both
   "${extPath}/programs/tmux.nix" # both

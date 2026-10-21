@@ -71,8 +71,8 @@ let
       [ "${name}=${escapeString (toString value)}" ]
     else if builtins.typeOf value == "set" && value ? cur && value ? max then
       [
-        "${name}-cur=${value.cur}"
-        "${name}-max=${value.max}"
+        "${name}-cur=${toString value.cur}"
+        "${name}-max=${toString value.max}"
       ]
     else
       throw "Invalid value for users.classes.<name>.${name}";
@@ -112,100 +112,102 @@ let
               );
             options = {
               # Resource Limits
+              # Leave OpenBSD limits unset so tc inheritance works.
+              # Preserve FreeBSD's existing defaults for compatibility.
               coredumpsize = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum coredump size limit
                 '';
               };
               cputime = mkOption {
-                type = limit time;
-                default = "unlimited";
+                type = types.nullOr (limit time);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   CPU usage limit
                 '';
               };
               datasize = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum data size limit
                 '';
               };
               filesize = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum file size limit
                 '';
               };
               maxproc = mkOption {
-                type = limit number;
-                default = "unlimited";
+                type = types.nullOr (limit number);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum number of processes
                 '';
               };
               memorylocked = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum locked in core memory size limit
                 '';
               };
               memoryuse = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum of core memory use size limit
                 '';
               };
               openfiles = mkOption {
-                type = limit number;
-                default = "unlimited";
+                type = types.nullOr (limit number);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum number of open files per process
                 '';
               };
               sbsize = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum permitted socketbuffer size
                 '';
               };
               vmemoryuse = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum permitted total VM usage per process
                 '';
               };
               stacksize = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum stack size limit
                 '';
               };
               pseudoterminals = mkOption {
-                type = limit number;
-                default = "unlimited";
+                type = types.nullOr (limit number);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum number of pseudoterminals
                 '';
               };
               swapuse = mkOption {
-                type = limit size;
-                default = "unlimited";
+                type = types.nullOr (limit size);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum swap space size limit
                 '';
               };
               umtxp = mkOption {
-                type = limit number;
-                default = "unlimited";
+                type = types.nullOr (limit number);
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "unlimited";
                 description = ''
                   Maximum number of process-shared pthread locks
                 '';
@@ -220,8 +222,8 @@ let
                 '';
               };
               cpumask = mkOption {
-                type = types.strMatching "default|all|[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*";
-                default = "default";
+                type = types.nullOr (types.strMatching "default|all|[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*");
+                default = if pkgs.stdenv.hostPlatform.isOpenBSD then null else "default";
                 description = ''
                   List of cpus to bind the user to
                 '';
@@ -338,15 +340,64 @@ in
   };
 
   config = {
+    users.classes = mkIf pkgs.stdenv.hostPlatform.isOpenBSD {
+      default.settings = {
+        # Preserve the limits previously supplied by the OpenBSD getty module.
+        datasize = mkDefault "1536M";
+        maxproc = mkDefault {
+          cur = 128;
+          max = 256;
+        };
+        openfiles = mkDefault {
+          cur = 512;
+          max = 1024;
+        };
+        stacksize-cur = mkDefault "4M";
+        localcipher = mkDefault "blowfish,a";
+        path = mkDefault "${config.security.wrapperDir} /run/current-system/sw/bin /run/current-system/sw/sbin";
+        umask = mkDefault "022";
+      };
+      daemon.settings = {
+        tc = mkDefault "default";
+        ignorenologin = mkDefault true;
+        datasize = mkDefault "4096M";
+        maxproc = mkDefault "infinity";
+        openfiles = mkDefault {
+          cur = 128;
+          max = 1024;
+        };
+        stacksize-cur = mkDefault "8M";
+      };
+      staff.settings = {
+        tc = mkDefault "default";
+        datasize = mkDefault {
+          cur = "1536M";
+          max = "infinity";
+        };
+        maxproc = mkDefault {
+          cur = 256;
+          max = 512;
+        };
+        ignorenologin = mkDefault true;
+        "requirehome@" = mkDefault true;
+      };
+    };
+
     # login.conf cannot be a symlink
     system.activationScripts.cap_mkdb = {
       deps = [ "etc" ];
-      text = ''
-        cat >/etc/login.conf <<EOF
-        ${concatStringsSep "\n" (lib.mapAttrsToList formatLine config.users.classes)}
-        EOF
-        ${cap_mkdb} /etc/login.conf
-      '';
+      text =
+        lib.optionalString pkgs.stdenv.hostPlatform.isOpenBSD ''
+          mkdir -p /etc/login.conf.d
+          # Replace the old getty-managed symlink before writing the class database.
+          if [ -L /etc/login.conf ]; then rm /etc/login.conf; fi
+        ''
+        + ''
+          cat >/etc/login.conf <<EOF
+          ${concatStringsSep "\n" (lib.mapAttrsToList formatLine config.users.classes)}
+          EOF
+          ${cap_mkdb} /etc/login.conf
+        '';
     };
   };
 }
