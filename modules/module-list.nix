@@ -94,6 +94,7 @@ in
   ./tasks/network-interfaces.nix
   ./tasks/tempfiles
   ./virtualisation/build-vm.nix
+  ./virtualisation/is-jail.nix
   ./tasks/nix-store.nix
 
   ./services/x11/xserver.nix
