@@ -151,7 +151,7 @@ in
     };
   };
 
-  config = {
+  config = mkIf pkgs.stdenv.hostPlatform.isFreeBSD {
     #systemd.additionalUpstreamSystemUnits = [
     #  "systemd-tmpfiles-clean.service"
     #  "systemd-tmpfiles-clean.timer"
